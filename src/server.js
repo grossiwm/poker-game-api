@@ -4,7 +4,7 @@ const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const players = new Map();
+const rooms = {};
 
 const io = new Server(server, {
     cors: {
@@ -14,17 +14,39 @@ const io = new Server(server, {
   });
 
 io.on('connection', (socket) => {
-  console.log("Player " + socket.id + " connected");
-  players.set(socket.id, { name: "Player_"+socket.id });
+  let roomIDgot = '';
 
-  io.emit('playersList', Array.from(players.values()));
+  socket.on('joinGameRoom', ({roomID, playerData}) => {
+    socket.join(roomID);
+    console.log("entrou na sala")
+    if (!rooms[roomID]) {
+      rooms[roomID] = new Map(); 
+    }
+
+    roomIDgot = roomID;
+    socket.join(roomID);
+    console.log(`Socket ${socket.id} entrou na sala ${roomID}`);
+    rooms[roomID].set(socket.id, playerData)
+    io.to(roomID).emit('playersList', Array.from(rooms[roomID].values()));
+  })
+  
+  socket.on('chatMessage', ({ roomID, message }) => {
+    const playerData = rooms[roomID]?.get(socket.id);
+    if (playerData) {
+      io.to(roomID).emit('newChatMessage', { 
+        sender: playerData.name, 
+        message: message,
+        timestamp: new Date() // Opcional: adicionar um carimbo de data/hora
+      });
+    }
+  });
 
   socket.on('disconnect', () => {
-    console.log('Usuário desconectado:', socket.id);
-    
-    players.delete(socket.id);
-
-    io.emit('playersList', Array.from(players.values()));
+    console.log('Player ', socket.id + ' disconnected');
+    if (roomIDgot) {
+      rooms[roomIDgot].delete(socket.id);
+      io.to(roomIDgot).emit('playersList', Array.from(rooms[roomIDgot].values()));
+    }
   });
 });
 
