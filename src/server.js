@@ -1,7 +1,8 @@
-const http = require('http');
-const { Server } = require('socket.io');
-const app = require('./app');
-const setupGameSockets = require('./sockets/gameSockets');
+
+import { Server } from 'socket.io';
+import app from './app.js';
+import setupGameSockets from './sockets/gameSockets.js';
+import http from 'http'
 
 const server = http.createServer(app);
 const io = new Server(server, {

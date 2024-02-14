@@ -1,4 +1,4 @@
-exports.dealCards = (req, res) => {
+export const dealCards = (req, res) => {
     const { cardType } = req.params;
 
     switch (cardType) {
