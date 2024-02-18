@@ -31,23 +31,53 @@ function setupGameSockets(io) {
                 rooms[roomID] = new Room(roomID);
             }
 
+            let room = rooms[roomID];
+
             roomIDgot = roomID;
             socket.join(roomID);
             console.log(`Socket ${socket.id} entrou na sala ${roomID}`);
             const player = new Player(socket.id, playerData.name);
-            rooms[roomID].addPlayer(player);
-            io.to(roomID).emit('playersList', Array.from(rooms[roomID].players.values()));
+            room.addPlayer(player);
+
+            const game = room.game;
+            io.emit('roundSet', { round: game.round });
+
+            if (game.hasVacantSeat()) {
+                game.addPlayer(player);
+                io.to(roomIDgot).emit('newChatMessage', {
+                    sender: 'Dealer',
+                    message: `Player ${player.name} started playing.`,
+                    timestamp: new Date()
+                });
+            }
+
+            io.to(roomID).emit('playersList', Array.from(game.players.values()));
 
             socket.on('playerAction', ({ action, amount }) => {
                 const player = rooms[roomIDgot].players.get(socket.id);
                 const message = getDealerMessageFromPlayerAction(player.name, action, amount);
-
+                if (action == 'folded') {
+                    state == 'folded';
+                } else {
+                    player.state = 'played';
+                }
                 if (message) {
                     io.to(roomIDgot).emit('newChatMessage', {
                         sender: 'Dealer',
                         message: getDealerMessageFromPlayerAction(player.name, action, amount),
                         timestamp: new Date()
                     });
+                }
+
+                if (game.hasPlayersWaiting()) {
+
+                    if (game.isRiverRound()) {
+                        game.goToNextHand();
+                    } else {
+                        game.goToNextRound();
+                    }
+
+                    io.emit('roundSet', { round: game.round });
                 }
 
             })
@@ -66,9 +96,13 @@ function setupGameSockets(io) {
             socket.on('disconnect', () => {
                 console.log('Player ', socket.id + ' disconnected');
                 if (roomIDgot) {
-                    rooms[roomIDgot].removePlayer(socket.id);
-                    io.to(roomIDgot).emit('playersList', Array.from(rooms[roomIDgot].players.values()));
+                    const room = rooms[roomIDgot];
+                    room.removePlayer(socket.id);
+                    const game = room.game;
+                    game.removePlayer(socket.id);
+                    io.to(roomIDgot).emit('playersList', Array.from(game.players.values()));
                 }
+
             });
         });
 

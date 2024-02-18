@@ -4,15 +4,15 @@ export const dealCards = (req, res) => {
     switch (cardType) {
       case 'flop':
         // Emitir o flop
-        io.emit('dealFlop', { /* dados do flop */ });
+        io.emit('flop', { /* dados do flop */ });
         break;
       case 'turn':
         // Emitir o turn
-        io.emit('dealTurn', { /* dados do turn */ });
+        io.emit('turn', { /* dados do turn */ });
         break;
       case 'river':
         // Emitir o river
-        io.emit('dealRiver', { /* dados do river */ });
+        io.emit('river', { /* dados do river */ });
         break;
       default:
         res.status(400).send('Tipo de carta inválido');

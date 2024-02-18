@@ -2,10 +2,11 @@ class Player {
     constructor(id, name) {
       this.id = id;
       this.name = name;
-      this.state = 'waiting'; // Exemplos: 'waiting', 'playing', 'folded'
-      this.room = null; // Referência à sala em que o jogador está
+      this.state = 'waiting';
+      this.room = null;
+      this.hasSeat = false;
+      this.position = 0;
     }
 }
 
 export default Player;
-  
