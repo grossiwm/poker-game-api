@@ -1,3 +1,5 @@
+import Deck from './Deck.js';
+
 class Game {
     static gameRounds = ['preflop', 'flop', 'turn', 'river'];
 
@@ -6,6 +8,9 @@ class Game {
       this.pot = 0;
       this.limitOfPlayers = 10;
       this.players = [];
+      this.deck = new Deck();
+      this.roundCards = [];
+      this.deck.shuffle();
     }
 
     countPlayers() {
@@ -33,13 +38,27 @@ class Game {
         this.players.forEach(player => {
             player.state = 'waiting';
         });
+
+        if (this.round === 'flop') {
+            this.cards = [...this.deck.dealCards(3)];   
+        } else if (this.round === 'turn') {
+            this.cards= [...this.cards, ...this.deck.dealCards(1)];
+        } else if (this.round === 'river') {
+            this.cards = [...this.cards, ...this.deck.dealCards(1)];
+        }
     }
 
     goToNextHand() {
         this.round = 'preflop';
 
+
+        this.deck = new Deck();
+        this.deck.shuffle();
+        this.cards = [];
+
         this.players.forEach(player => {
             player.state = 'waiting';
+            player.cards = this.deck.dealCards(2);
         });
     }
 
@@ -48,7 +67,7 @@ class Game {
     }
 
     hasPlayersWaiting() {
-        return this.players.filter(p => p.state == 'waiting').length == 0;
+        return this.players.filter(p => p.state == 'waiting').length > 0;
     }
 }
 export default Game;

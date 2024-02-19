@@ -26,7 +26,6 @@ function setupGameSockets(io) {
 
         socket.on('joinGameRoom', ({ roomID, playerData }) => {
             socket.join(roomID);
-            console.log("entrou na sala")
             if (!rooms[roomID]) {
                 rooms[roomID] = new Room(roomID);
             }
@@ -35,12 +34,11 @@ function setupGameSockets(io) {
 
             roomIDgot = roomID;
             socket.join(roomID);
-            console.log(`Socket ${socket.id} entrou na sala ${roomID}`);
             const player = new Player(socket.id, playerData.name);
             room.addPlayer(player);
 
             const game = room.game;
-            io.emit('roundSet', { round: game.round });
+            io.emit('roundSet', { round: game.round, cards: game.cards });
 
             if (game.hasVacantSeat()) {
                 game.addPlayer(player);
@@ -50,6 +48,10 @@ function setupGameSockets(io) {
                     timestamp: new Date()
                 });
             }
+
+            player.cards = game.deck.dealCards(2);
+            
+            io.to(socket.id).emit('setPlayerCards', player.cards);
 
             io.to(roomID).emit('playersList', Array.from(game.players.values()));
 
@@ -69,15 +71,18 @@ function setupGameSockets(io) {
                     });
                 }
 
-                if (game.hasPlayersWaiting()) {
+                if (!game.hasPlayersWaiting()) {
 
                     if (game.isRiverRound()) {
                         game.goToNextHand();
+                        game.players.forEach(p => {
+                            io.to(p.id).emit('setPlayerCards', p.cards);
+                        });
                     } else {
                         game.goToNextRound();
                     }
 
-                    io.emit('roundSet', { round: game.round });
+                    io.emit('roundSet', { round: game.round, cards:  game.cards});
                 }
 
             })
@@ -94,7 +99,6 @@ function setupGameSockets(io) {
             });
 
             socket.on('disconnect', () => {
-                console.log('Player ', socket.id + ' disconnected');
                 if (roomIDgot) {
                     const room = rooms[roomIDgot];
                     room.removePlayer(socket.id);

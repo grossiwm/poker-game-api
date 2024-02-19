@@ -6,6 +6,7 @@ class Player {
       this.room = null;
       this.hasSeat = false;
       this.position = 0;
+      this.cards = [];
     }
 }
 
