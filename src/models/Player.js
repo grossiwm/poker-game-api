@@ -4,9 +4,14 @@ class Player {
       this.name = name;
       this.state = 'waiting';
       this.room = null;
-      this.hasSeat = false;
       this.position = 0;
       this.cards = [];
+      this.chips = 1000;
+      this.isDealer = false;
+    }
+
+    canBet(player, amount) {
+      return (amount && player.chips >= amount);
     }
 }
 

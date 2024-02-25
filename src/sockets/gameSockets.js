@@ -42,6 +42,7 @@ function setupGameSockets(io) {
 
             if (game.hasVacantSeat()) {
                 game.addPlayer(player);
+                
                 io.to(roomIDgot).emit('newChatMessage', {
                     sender: 'Dealer',
                     message: `Player ${player.name} started playing.`,
@@ -55,8 +56,26 @@ function setupGameSockets(io) {
 
             io.to(roomID).emit('playersList', Array.from(game.players.values()));
 
+            io.to(roomID).emit('potTotal', {pot: game.pot});
+
+            io.to(roomID).emit('positionTurn', { position: game.getPositionPlaying() } );
+
             socket.on('playerAction', ({ action, amount }) => {
+
                 const player = rooms[roomIDgot].players.get(socket.id);
+                
+                if (!game.playerCanPlay(player)) {
+                    return;
+                }
+
+                if (player.canBet(player, amount)) {
+                    game.receivePlayerBet(player, amount);
+                }
+                io.to(socket.id).emit('yourTurn', { yourTurn: (player.position === game.positionPlaying)} );
+
+                io.to(roomID).emit('playersList', Array.from(game.players.values()));
+                io.to(roomID).emit('potTotal', {pot: game.pot})
+
                 const message = getDealerMessageFromPlayerAction(player.name, action, amount);
                 if (action == 'folded') {
                     state == 'folded';
@@ -75,6 +94,7 @@ function setupGameSockets(io) {
 
                     if (game.isRiverRound()) {
                         game.goToNextHand();
+                        io.to(roomID).emit('playersList', Array.from(game.players.values()));
                         game.players.forEach(p => {
                             io.to(p.id).emit('setPlayerCards', p.cards);
                         });
@@ -84,6 +104,8 @@ function setupGameSockets(io) {
 
                     io.emit('roundSet', { round: game.round, cards:  game.cards});
                 }
+
+                io.to(roomID).emit('positionTurn', { position: game.getPositionPlaying() } );
 
             })
 

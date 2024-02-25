@@ -1,4 +1,5 @@
 import Deck from './Deck.js';
+import Player from './Player.js';
 
 class Game {
     static gameRounds = ['preflop', 'flop', 'turn', 'river'];
@@ -11,6 +12,42 @@ class Game {
       this.deck = new Deck();
       this.roundCards = [];
       this.deck.shuffle();
+      this.positionPlaying = 0;
+
+      this.players.push(this.getDealer());
+    }
+
+    getDealer() {
+        const dealer = new Player('dealer', 'Dealer');
+        dealer.state = 'not_playing';
+        dealer.isDealer = true;
+        dealer.chips = null;
+        return dealer;
+    }
+
+    receivePlayerBet(player, amount) {
+        player.chips -= amount;
+        this.pot += amount;
+
+        this.goToNextPlayer();
+    }
+
+    getPositionPlaying() {
+        return this.positionPlaying + 1;
+    }
+
+    goToNextPlayer() {
+        this.positionPlaying = (this.positionPlaying+1)%(this.players.length-1);
+    }
+
+    playerCanPlay(player) {
+        const playersFound = this.players.filter(p => player.id == p.id);
+        if (playersFound.length > 0) {
+            const playerFound = playersFound[0];
+            return this.getPositionPlaying() === playerFound.position;
+        } else {
+            return false;
+        }
     }
 
     countPlayers() {
@@ -36,6 +73,9 @@ class Game {
             this.round = Game.gameRounds[newIndex];
         }
         this.players.forEach(player => {
+            if (player.id === 'dealer') {
+                return;
+            }
             player.state = 'waiting';
         });
 
@@ -56,10 +96,17 @@ class Game {
         this.deck.shuffle();
         this.cards = [];
 
+        // this.players = this.players.filter(player => player.chips > 0);
+
         this.players.forEach(player => {
+            if (player.id === 'dealer') {
+                return;
+            }
             player.state = 'waiting';
             player.cards = this.deck.dealCards(2);
         });
+
+        
     }
 
     isRiverRound() {
