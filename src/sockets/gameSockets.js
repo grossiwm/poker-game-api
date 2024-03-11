@@ -93,7 +93,14 @@ function setupGameSockets(io) {
                 if (!game.hasPlayersWaiting()) {
 
                     if (game.isRiverRound()) {
+                        const victoriousPlayer = game.finishHand();
+                        io.to(roomIDgot).emit('newChatMessage', {
+                            sender: 'Dealer',
+                            message: `Player ${victoriousPlayer.name} has won the pot`,
+                            timestamp: new Date()
+                        });
                         game.goToNextHand();
+                        io.to(roomID).emit('potTotal', {pot: game.pot})
                         io.to(roomID).emit('playersList', Array.from(game.players.values()));
                         game.players.forEach(p => {
                             io.to(p.id).emit('setPlayerCards', p.cards);

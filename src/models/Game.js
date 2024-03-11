@@ -1,5 +1,6 @@
 import Deck from './Deck.js';
 import Player from './Player.js';
+import getWinner from '../service/handsSolver.js';
 
 class Game {
     static gameRounds = ['preflop', 'flop', 'turn', 'river'];
@@ -10,7 +11,7 @@ class Game {
       this.limitOfPlayers = 10;
       this.players = [];
       this.deck = new Deck();
-      this.roundCards = [];
+      this.cards = [];
       this.deck.shuffle();
       this.positionPlaying = 0;
 
@@ -23,6 +24,10 @@ class Game {
         dealer.isDealer = true;
         dealer.chips = null;
         return dealer;
+    }
+
+    getActivePlayers() {
+        return this.players.filter(p => p.state !== 'not_playing');
     }
 
     receivePlayerBet(player, amount) {
@@ -87,6 +92,13 @@ class Game {
             this.cards = [...this.cards, ...this.deck.dealCards(1)];
         }
     }
+    
+    finishHand() {
+        const player = getWinner(this.getActivePlayers(), this.cards);
+        this.players.filter(p => p.id === player.id)[0].chips += this.pot;
+        this.pot = 0;
+        return player;
+    }
 
     goToNextHand() {
         this.round = 'preflop';
@@ -95,8 +107,6 @@ class Game {
         this.deck = new Deck();
         this.deck.shuffle();
         this.cards = [];
-
-        // this.players = this.players.filter(player => player.chips > 0);
 
         this.players.forEach(player => {
             if (player.id === 'dealer') {
